@@ -6,10 +6,19 @@ const toast = useToast()
 
 const open = ref(false)
 
-const links = [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
-  to: '/',
+const links = [[
+  {
+    label: 'Home',
+    icon: 'i-lucide-home',
+    to: '/',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+  label: 'Analysis',
+  icon: 'i-lucide-chart-line',
+  to: '/analysis',
   onSelect: () => {
     open.value = false
   }
@@ -58,7 +67,7 @@ const links = [[{
 }], [{
   label: 'Feedback',
   icon: 'i-lucide-message-circle',
-  to: 'https://github.com/nuxt-ui-pro/dashboard',
+  to: '/',
   target: '_blank'
 }, {
   label: 'Help & Support',
