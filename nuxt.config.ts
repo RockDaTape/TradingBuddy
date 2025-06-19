@@ -28,4 +28,24 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-07-11',
 
+  // 1) Make sure Vite includes these in the SSR bundle
+  vite: {
+    ssr: {
+      noExternal: [
+        '@tiptap/vue-3',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-color'
+      ],
+    },
+  },
+
+  // 2) (Optional but safe) Transpile them too
+  build: {
+    transpile: [
+      '@tiptap/vue-3',
+      '@tiptap/starter-kit',
+      '@tiptap/extension-color'
+    ],
+  },
+
 })

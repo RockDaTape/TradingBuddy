@@ -16,6 +16,14 @@ const links = [[
     }
   },
   {
+    label: 'Rules',
+    icon: 'i-lucide-clipboard-list',
+    to: '/rules',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
   label: 'Analysis',
   icon: 'i-lucide-chart-line',
   to: '/analysis',
