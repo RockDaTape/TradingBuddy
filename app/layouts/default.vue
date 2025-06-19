@@ -35,7 +35,8 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
-  }, {
+  },
+    {
     label: 'Members',
     to: '/settings/members',
     onSelect: () => {
@@ -119,9 +120,9 @@ onMounted(async () => {
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
 
-      <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
-      </template>
+<!--      <template #header="{ collapsed }">-->
+<!--        <TeamsMenu :collapsed="collapsed" />-->
+<!--      </template>-->
 
       <template #default="{ collapsed }">
         <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
