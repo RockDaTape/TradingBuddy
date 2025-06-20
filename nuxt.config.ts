@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { defineNuxtConfig } from 'nuxt/config'
+
 export default defineNuxtConfig({
   modules: [
     '@nuxt/ui-pro',
@@ -8,7 +10,15 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxt/scripts',
-    '@nuxt/test-utils'],
+    '@nuxt/test-utils',
+    '@nuxtjs/supabase'
+  ],
+
+  supabase: {
+    url: process.env.SUPABASE_URL!,
+    key: process.env.SUPABASE_ANON_KEY!,
+    redirect: false,      // disable automatic /login redirects
+  },
 
   devtools: {
     enabled: true

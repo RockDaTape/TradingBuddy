@@ -7,16 +7,28 @@
         </template>
       </UDashboardNavbar>
     </template>
+
     <template class="-ms-1" #body>
       <client-only>
         <div class="rules-editor">
-          <tiptap-editor />
+          <TiptapEditor
+            v-if="loaded"
+            :initial-content="content"
+            @update="save"
+          />
         </div>
       </client-only>
+    </template>
+    <template #footer>
+      <h1>Hello</h1>
     </template>
   </UDashboardPanel>
 </template>
 
-<script setup>
-import TiptapEditor from '~/components/TiptapEditor.vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRules } from '../composables/useRules'
+
+const { content, save } = useRules()
+const loaded = computed(() => content.value !== '')  // or content.value !== null
 </script>

@@ -1,4 +1,29 @@
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json"
+  // Inherit Nuxt’s defaults
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./*"],
+      "@/*": ["./*"],
+      // Map ~/types/... to app/types/...
+      "~/types/*": ["app/types/*"]
+    }
+  },
+  "include": [
+    // Your moved type definitions
+    "app/types/**/*.ts",
+    "app/types/**/*.d.ts",
+
+    // Nuxt-generated auto-imports & types
+    ".nuxt/imports.d.ts",
+    ".nuxt/types/**/*.d.ts",
+
+    // All of your source files
+    "app/**/*.vue",
+    "components/**/*.vue",
+    "composables/**/*.ts",
+    "pages/**/*.vue",
+    "**/*.ts"
+  ]
 }

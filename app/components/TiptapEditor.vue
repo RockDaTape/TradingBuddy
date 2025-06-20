@@ -140,24 +140,35 @@
     </client-only>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
+import { defineProps, defineEmits, onBeforeUnmount } from 'vue'
 
-// Persist editor content across reloads
-const STORAGE_KEY  = 'tiptap-content';
-const savedContent = localStorage.getItem(STORAGE_KEY) || '';
+// Props: initial HTML content
+const props = defineProps<{
+  initialContent: string
+}>()
 
+// Emit update events
+const emit = defineEmits<{
+  (e: 'update', html: string): void
+}>()
+
+// Initialize Tiptap editor with prop content
 const editor = useEditor({
-  // load saved HTML (or start empty)
-  content: savedContent,
   extensions: [StarterKit],
-  // after every change, write HTML back to localStorage
+  content: props.initialContent,
   onUpdate({ editor }) {
-    localStorage.setItem(STORAGE_KEY, editor.getHTML());
-  },
-  // …any other config you already have…
-});
+    const html = editor.getHTML()
+    emit('update', html)
+  }
+})
+
+// Clean up editor instance
+onBeforeUnmount(() => {
+  editor?.destroy()
+})
 </script>
 
 <style scoped>
@@ -174,18 +185,12 @@ const editor = useEditor({
 /* Ensure headings inside the editor are styled */
 .tiptap-editor__content.prose :deep(h1) {
   font-size: 2rem;
-  font-weight: 600;
-  margin: 1.5em 0 0.75em;
 }
 .tiptap-editor__content.prose :deep(h2) {
   font-size: 1.5rem;
-  font-weight: 600;
-  margin: 1.25em 0 0.5em;
 }
 .tiptap-editor__content.prose :deep(h3) {
   font-size: 1.25rem;
-  font-weight: 500;
-  margin: 1em 0 0.5em;
 }
 
 /* List styles */
@@ -202,4 +207,5 @@ const editor = useEditor({
 .tiptap-editor__content.prose :deep(li) {
   margin-bottom: 0.5rem;
 }
+
 </style>
