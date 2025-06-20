@@ -19,9 +19,6 @@
         </div>
       </client-only>
     </template>
-    <template #footer>
-      <h1>Hello</h1>
-    </template>
   </UDashboardPanel>
 </template>
 
