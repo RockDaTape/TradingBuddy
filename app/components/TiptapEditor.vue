@@ -167,7 +167,10 @@ const editor = useEditor({
 
 // Clean up editor instance
 onBeforeUnmount(() => {
-  editor?.destroy()
+  const instance = editor?.value ?? editor
+  if (instance && typeof instance.destroy === 'function') {
+    instance.destroy()
+  }
 })
 </script>
 
