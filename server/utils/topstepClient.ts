@@ -132,6 +132,10 @@ export async function fetchTrades(startTs: string, endTs: string): Promise<Trade
     side: t.side === 1 ? 'BUY' : 'SELL',
     price: t.price,
     profitAndLoss: t.profitAndLoss,
+    fees: t.fees,
+    size: t.size,
+    voided: t.voided,
+    orderId: t.orderId,
   }))
 }
 

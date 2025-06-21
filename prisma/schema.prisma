@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ⬇ Your custom trading models ⬇
+
+model Trade {
+  id                BigInt    @id
+  accountId         Int
+  contractId        String
+  creationTimestamp DateTime  @map("creationTimestamp")
+  price             Float
+  profitAndLoss     Float?    @map("profitAndLoss")
+  fees              Float
+  side              Int
+  size              Int
+  voided            Boolean
+  orderId           BigInt
+
+  notes             String?
+  videoLink         String?
+  screenshots       TradeScreenshot[]
+  tags              TradeTag[]
+}
+
+model TradeScreenshot {
+  id       Int    @id @default(autoincrement())
+  trade    Trade  @relation(fields: [tradeId], references: [id])
+  tradeId  BigInt
+  url      String
+
+  @@index([tradeId])
+}
+
+model TagGroup {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  tags   Tag[]
+}
+
+model Tag {
+  id      Int        @id @default(autoincrement())
+  name    String
+  group   TagGroup   @relation(fields: [groupId], references: [id])
+  groupId Int
+
+  trades  TradeTag[]
+}
+
+model TradeTag {
+  trade   Trade @relation(fields: [tradeId], references: [id])
+  tradeId BigInt
+  tag     Tag   @relation(fields: [tagId], references: [id])
+  tagId   Int
+
+  @@id([tradeId, tagId])
+}
+
+/// ⬇ Your existing RLS‐protected table (leave untouched) ⬇
+
+/// This model came from introspection and has row-level security enabled.
+/// Prisma Migrate cannot manage RLS policies—those must be applied manually
+/// via Supabase SQL migrations or console.
+model rules {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  content    String?   @default("")
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+}
