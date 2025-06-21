@@ -1,0 +1,9 @@
+// app/types/account.d.ts
+export interface Account {
+  id: number
+  name: string
+  balance: number
+  canTrade: boolean
+  isVisible: boolean
+  simulated: boolean
+}
