@@ -1,36 +1,32 @@
 #!/usr/bin/env tsx
 
-import { PrismaClient }     from '@prisma/client'
+import { PrismaClient }      from '@prisma/client'
 import { fetchTrades, fetchOrders } from '../server/utils/topstepClient'
-import type { Trade }       from '../app/types/trade'
-import type { Order }       from '../app/types/order'
+import type { Trade }        from '../app/types/trade'
+import type { Order }        from '../app/types/order'
 
 // detect --dry-run flag
 const dryRun = process.argv.includes('--dry-run')
 
 async function backfill(): Promise<void> {
   const prisma = new PrismaClient()
-
-  // if dry-run, collect everything here
   const allTrades: Trade[] = dryRun ? [] : []
   const allOrders: Order[] = dryRun ? [] : []
 
   // 1) historic start & window size
   const accountOpened = new Date('2023-01-01T00:00:00Z') // ← adjust if needed
   const windowDays    = 30
-
-  let windowStart = accountOpened
+  let windowStart    = accountOpened
 
   while (true) {
-    // provisional 30-day end
+    // compute window
     const provisionalEnd = new Date(windowStart)
     provisionalEnd.setDate(provisionalEnd.getDate() + windowDays)
-
-    // clamp to now on the last batch
     const now       = new Date()
     const windowEnd = provisionalEnd > now ? now : provisionalEnd
 
-    console.error(`🟢 Fetching window ${windowStart.toISOString()} → ${windowEnd.toISOString()}`)
+    // <-- keep exactly one line per window -->
+    console.log(`⏳ Fetching ${windowStart.toISOString()} → ${windowEnd.toISOString()}`)
 
     // --- TRADES ---
     const trades: Trade[] = await fetchTrades(
@@ -39,11 +35,10 @@ async function backfill(): Promise<void> {
     )
     const validTrades = trades.filter(t => t.id != null && t.orderId != null)
     if (validTrades.length !== trades.length) {
-      console.error(`⚠️  Skipping ${trades.length - validTrades.length} trades with missing id/orderId`)
+      console.warn(`⚠️  Skipped ${trades.length - validTrades.length} invalid trades`)
     }
     if (dryRun) {
       allTrades.push(...validTrades)
-      console.error(`🟢 [dry-run] collected ${validTrades.length} trades`)
     } else {
       await Promise.all(validTrades.map(t =>
         prisma.trade.upsert({
@@ -76,20 +71,19 @@ async function backfill(): Promise<void> {
     )
     const validOrders = orders.filter(o => o.id != null)
     if (validOrders.length !== orders.length) {
-      console.error(`⚠️  Skipping ${orders.length - validOrders.length} orders with missing id`)
+      console.warn(`⚠️  Skipped ${orders.length - validOrders.length} invalid orders`)
     }
     if (dryRun) {
       allOrders.push(...validOrders)
-      console.error(`🟢 [dry-run] collected ${validOrders.length} orders`)
     } else {
       await Promise.all(validOrders.map(o =>
         prisma.order.upsert({
           where: { id: o.id },
           update: {
-            status:      o.status,
+            status:          o.status,
             updateTimestamp: o.updateTimestamp ? new Date(o.updateTimestamp) : null,
-            limitPrice:  o.limitPrice,
-            stopPrice:   o.stopPrice,
+            limitPrice:      o.limitPrice,
+            stopPrice:       o.stopPrice,
           },
           create: {
             id:                o.id,
@@ -110,20 +104,20 @@ async function backfill(): Promise<void> {
 
     // done?
     if (windowEnd.getTime() === now.getTime()) {
-      console.error(dryRun
-        ? '✔ [dry-run] backfill complete'
-        : '✔ Backfill complete (caught up to now)')
+      console.log(dryRun
+        ? '✅ [dry-run] complete'
+        : '✅ Backfill complete')
       break
     }
 
-    // advance to next slice
+    // advance slice
     windowStart = new Date(windowEnd)
     windowStart.setSeconds(windowStart.getSeconds() + 1)
   }
 
   if (dryRun) {
-    // emit both arrays as JSON
-    console.log(JSON.stringify({ trades: allTrades, orders: allOrders }, null, 2))
+    // for dry-run just spit out counts
+    console.log(`Collected ${allTrades.length} trades and ${allOrders.length} orders`)
     process.exit(0)
   }
 
