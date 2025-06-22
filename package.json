@@ -10,7 +10,10 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
-    "backfill": "tsx scripts/backfillTrades.ts"
+    "backfill": "tsx scripts/backfillTrades.ts",
+    "prisma:generate": "prisma generate",
+    "migrate": "prisma migrate dev --name init",
+    "build:roundturns": "tsx scripts/build-roundturns.ts"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.47",

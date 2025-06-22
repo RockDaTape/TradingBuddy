@@ -13,6 +13,7 @@ export function useRules() {
       .from('rules')
       .select('id, content')
       .single()
+    console.log('rules fetch:', { data, error })
     if (!error && data) {
       id.value      = data.id
       content.value = data.content

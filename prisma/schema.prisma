@@ -7,10 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// ───── Your two models ─────
-
 model Trade {
-  id                BigInt    @id
+  id                BigInt   @id
   accountId         Int
   contractId        String
   creationTimestamp DateTime
@@ -21,6 +19,9 @@ model Trade {
   size              Int
   voided            Boolean
   orderId           BigInt
+
+  roundTurnOpenTrades  RoundTurn[] @relation("RoundTurnOpenTrade")
+  roundTurnCloseTrades RoundTurn[] @relation("RoundTurnCloseTrade")
 }
 
 model Order {
@@ -35,16 +36,49 @@ model Order {
   size              Int
   limitPrice        Float?
   stopPrice         Float?
+
+  roundTurnOpenOrders  RoundTurn[] @relation("RoundTurnOpenOrder")
+  roundTurnCloseOrders RoundTurn[] @relation("RoundTurnCloseOrder")
 }
 
-/// ⬇ Your existing RLS‐protected table (leave untouched) ⬇
-
-/// This model came from introspection and has row-level security enabled.
-/// Prisma Migrate cannot manage RLS policies—those must be applied manually
-/// via Supabase SQL migrations or console.
 model rules {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   created_at DateTime  @default(now()) @db.Timestamptz(6)
   content    String?   @default("")
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model RoundTurn {
+  roundTurnId           String    @id
+  accountId             Int
+  contractId            String
+
+  openOrderId           BigInt
+  openOrderTimestamp    DateTime
+  openTradeId           BigInt
+  openPrice             Float
+
+  intraHighPrice        Float
+  intraLowPrice         Float
+  maxFavorableExcursion Float
+  maxAdverseExcursion   Float
+
+  closeOrderId          BigInt
+  closeOrderTimestamp   DateTime
+  closeTradeId          BigInt
+  closePrice            Float
+
+  profitAndLoss         Float
+  fees                  Float
+  side                  Int
+  size                  Int
+  durationSeconds       Int
+  voided                Boolean
+  relatedOrderIds       String[]
+
+  // Relations back to Trade & Order:
+  openOrder   Order @relation("RoundTurnOpenOrder",   fields: [openOrderId],   references: [id])
+  openTrade   Trade @relation("RoundTurnOpenTrade",   fields: [openTradeId],   references: [id])
+  closeOrder  Order @relation("RoundTurnCloseOrder",  fields: [closeOrderId],  references: [id])
+  closeTrade  Trade @relation("RoundTurnCloseTrade",  fields: [closeTradeId],  references: [id])
 }
