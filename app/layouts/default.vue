@@ -43,7 +43,7 @@ const links = [[
   label: 'Settings',
   to: '/settings',
   icon: 'i-lucide-settings',
-  defaultOpen: true,
+  defaultOpen: false,
   type: 'trigger',
   children: [{
     label: 'General',

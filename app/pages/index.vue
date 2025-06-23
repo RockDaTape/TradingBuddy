@@ -1,43 +1,47 @@
 <script setup lang="ts">
-import { useAsyncData } from 'nuxt/app'
-import { computed }     from 'vue'
-import type { Trade }   from '~/app/types/trade'
+import type { DropdownMenuItem } from '@nuxt/ui'
 
-// ───────────────────────────────────────────────────────────
-// 1) Build your UTC “today” window
-// ───────────────────────────────────────────────────────────
-// ─── Fixed window for 20 June 2025 ───
-const START = '2025-06-20T00:00:00Z'
-const END   = '2025-06-21T00:00:00Z'
+const { isNotificationsSlideoverOpen } = useDashboard()
 
-// ───────────────────────────────────────────────────────────
-// 2) Fetch trades from your Nitro API
-// ───────────────────────────────────────────────────────────
-const { data: tradesData, pending, error } = await useAsyncData(
-  'trades',
-  () => $fetch<{ trades: Trade[] }>('/api/trades', {
-    params: { start: START, end: END }
-  })
-)
+const items = [[{
+  label: 'New mail',
+  icon: 'i-lucide-send',
+  to: '/inbox'
+}, {
+  label: 'New customer',
+  icon: 'i-lucide-user-plus',
+  to: '/customers'
+}]] satisfies DropdownMenuItem[][]
 
-// ───────────────────────────────────────────────────────────
-// 3) Always give the table an array, even if empty
-// ───────────────────────────────────────────────────────────
-const trades = computed<Trade[]>(() => tradesData.value?.trades ?? [])
 </script>
 
 <template>
-  <h1>Today’s Topstep Trades</h1>
+  <UDashboardPanel id="home">
+    <template #header>
+      <UDashboardNavbar title="Home" :ui="{ right: 'gap-3' }">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
 
-  <!-- Loading state -->
-  <p v-if="pending">Loading trades…</p>
+        <template #right>
+          <UTooltip text="Notifications" :shortcuts="['N']">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              square
+              @click="isNotificationsSlideoverOpen = true"
+            >
+              <UChip color="error" inset>
+                <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
+              </UChip>
+            </UButton>
+          </UTooltip>
 
-  <!-- Error state -->
-  <p v-else-if="error">Error: {{ error.message }}</p>
-
-  <!-- Data state -->
-  <TradesTable
-    v-else
-    :trades="trades"
-  />
+          <UDropdownMenu :items="items">
+            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
+          </UDropdownMenu>
+        </template>
+      </UDashboardNavbar>
+    </template>
+  </UDashboardPanel>
 </template>
