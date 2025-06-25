@@ -1,11 +1,6 @@
 <template>
   <client-only>
-    <UCard variant="subtle" class="w-full"
-           :ui="{
-              header: 'sticky -top-[25px] z-10 bg-[#202023] px-4 py-2'
-            }"
-
-    >
+    <UCard variant="subtle" class="w-full">
       <template #header>
         <div class="control-group px-4">
           <div class="button-group">
@@ -119,17 +114,6 @@
               icon="i-lucide-list-ordered"
               square
             />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleTaskList().run()"
-              :disabled="!editor?.can().chain().focus().toggleTaskList().run()"
-              :active="editor?.isActive('taskList')"
-              icon="i-lucide-check-square"
-              square
-            />
 
             <!-- Divider -->
             <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
@@ -164,15 +148,16 @@
               style="display: none;"
             />
 
-            <!-- Add embed button after image button -->
+            <!-- Add iframe button after image button -->
             <UButton
               size="sm"
               variant="outline"
-              @click="openEmbedDialog"
-              icon="i-lucide-video"
+              @click="addIframe"
+              icon="i-lucide-play-square"
               square
-              title="Add Embed"
+              title="Add iframe"
             />
+
 
             <!-- Divider -->
             <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
@@ -205,69 +190,6 @@
         />
       </template>
     </UCard>
-
-    <!-- Custom Embed Modal -->
-    <div v-if="showEmbedDialog" class="fixed inset-0 z-50 flex items-center justify-center">
-      <!-- Backdrop -->
-      <div
-        class="absolute inset-0 bg-black bg-opacity-50"
-        @click="showEmbedDialog = false"
-      ></div>
-
-      <!-- Modal -->
-      <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-        <!-- Header -->
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Add Embed</h3>
-        </div>
-
-        <!-- Body -->
-        <div class="px-6 py-4 space-y-4">
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              URL *
-            </label>
-            <input
-              v-model="embedUrl"
-              type="url"
-              placeholder="https://www.youtube.com/watch?v=..."
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Title (optional)
-            </label>
-            <input
-              v-model="embedTitle"
-              type="text"
-              placeholder="Video title or description"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-lg flex justify-end gap-2">
-          <button
-            type="button"
-            @click="showEmbedDialog = false"
-            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            @click="insertEmbed"
-            :disabled="!embedUrl"
-            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Add Embed
-          </button>
-        </div>
-      </div>
-    </div>
   </client-only>
 </template>
 
@@ -287,16 +209,8 @@ import ListItem from '@tiptap/extension-list-item'
 import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import History from '@tiptap/extension-history'
 import Image from '@tiptap/extension-image'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
 
-
-import { EmbedExtension } from '../extensions/embed'
-
-// Custom TaskItem extension like in the docs
-const CustomTaskItem = TaskItem.extend({
-  content: 'inline*',
-})
+import IframeExtension from '../extensions/iframe'
 
 // Props: initial HTML content and context
 const props = defineProps<{
@@ -318,11 +232,6 @@ const toast = useToast()
 const fileInput = ref<HTMLInputElement>()
 const isUploading = ref(false)
 
-// Embed dialog state
-const showEmbedDialog = ref(false)
-const embedUrl = ref('')
-const embedTitle = ref('')
-
 // Initialize Tiptap editor
 const editor = useEditor({
   extensions: [
@@ -339,11 +248,6 @@ const editor = useEditor({
     ListItem,
     HorizontalRule,
     History,
-    TaskList,
-    CustomTaskItem.configure({  // Use CustomTaskItem instead of TaskItem
-      nested: true,
-    }),
-
     Image.configure({
       inline: true,
       allowBase64: false, // We're using Supabase now
@@ -351,7 +255,7 @@ const editor = useEditor({
         class: 'editor-image',
       },
     }),
-    EmbedExtension, // Custom embed extension
+    IframeExtension, // Add the iframe extension
   ],
   content: props.initialContent,
   onUpdate({ editor }) {
@@ -365,45 +269,11 @@ const editor = useEditor({
   },
 })
 
-// Open embed dialog with debugging
-const openEmbedDialog = () => {
-  console.log('🔵 Opening embed dialog...')
-  showEmbedDialog.value = true
-  console.log('🔵 showEmbedDialog.value:', showEmbedDialog.value)
-}
-
-// Insert embed function with debugging
-const insertEmbed = () => {
-  console.log('🟢 Inserting embed...', { url: embedUrl.value, title: embedTitle.value })
-
-  if (editor.value && embedUrl.value) {
-    const success = editor.value.chain().focus().setEmbed({
-      url: embedUrl.value,
-      title: embedTitle.value || 'Embedded Content'
-    }).run()
-
-    console.log('🟢 Embed insertion success:', success)
-
-    if (success) {
-      // Reset form
-      embedUrl.value = ''
-      embedTitle.value = ''
-      showEmbedDialog.value = false
-
-      toast.add({
-        title: 'Embed added successfully',
-        color: 'success'
-      })
-    } else {
-      console.log('🔴 Embed insertion failed')
-      toast.add({
-        title: 'Failed to add embed',
-        description: 'Please check the URL and try again',
-        color: 'error'
-      })
-    }
-  } else {
-    console.log('🔴 No editor or URL provided')
+// Add iframe function
+const addIframe = () => {
+  const src = prompt('Enter iframe URL:')
+  if (src && editor.value) {
+    editor.value.chain().focus().setIframe({ src }).run()
   }
 }
 
@@ -461,18 +331,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-
-#header { /* Use your original selector instead of .ai-style-change-1 */
-  position: sticky;
-  top: -10px;
-  z-index: 1;
-  background-color: oklab(0.274 0.00165715 -0.00576662);
-}
-
 /* Basic editor styles */
 .button-group {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   align-items: center;
   gap: 0.25rem;
 }
@@ -544,33 +407,6 @@ onBeforeUnmount(() => {
   border-top-color: #4b5563;
 }
 
-/* Task list specific styles - Updated with proper CSS and .tiptap wrapper */
-.tiptap-editor__content :deep(.tiptap ul[data-type="taskList"]) {
-  list-style: none;
-  margin-left: 0;
-  padding: 0;
-}
-
-.tiptap-editor__content :deep(.tiptap ul[data-type="taskList"] li) {
-  align-items: center;
-  display: flex;
-}
-
-.tiptap-editor__content :deep(.tiptap ul[data-type="taskList"] li > label) {
-  flex: 0 0 auto;
-  margin-right: 0.5rem;
-  user-select: none;
-}
-
-.tiptap-editor__content :deep(.tiptap ul[data-type="taskList"] li > div) {
-  flex: 1 1 auto;
-}
-
-.tiptap-editor__content :deep(.tiptap ul[data-type="taskList"] input[type="checkbox"]) {
-  cursor: pointer;
-}
-
-
 /* Image styles */
 .tiptap-editor__content.prose :deep(.editor-image) {
   max-width: 100%;
@@ -606,66 +442,13 @@ onBeforeUnmount(() => {
   height: 0;
 }
 
-/* Embed styles */
-.tiptap-editor__content.prose :deep(.embed-wrapper) {
-  margin: 1rem 0;
+/* Add iframe styles */
+.tiptap-editor__content.prose :deep(iframe) {
+  width: 100%;
+  height: 315px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
 }
 
-.tiptap-editor__content.prose :deep(.embed-header) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.tiptap-editor__content.prose :deep(.embed-title) {
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.tiptap-editor__content.prose :deep(.embed-link) {
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.tiptap-editor__content.prose :deep(.embed-link:hover) {
-  opacity: 1;
-}
-
-/* YouTube embed styles */
-.tiptap-editor__content.prose :deep(.youtube-embed iframe) {
-  width: 100%;
-  min-height: 315px;
-}
-
-/* Loom embed styles - responsive wrapper */
-.tiptap-editor__content.prose :deep(.loom-embed) {
-  border: none; /* Remove border for cleaner look */
-}
-
-.tiptap-editor__content.prose :deep(.loom-embed > div) {
-  /* The responsive wrapper div already has inline styles */
-}
-
-/* Default iframe embed styles */
-.tiptap-editor__content.prose :deep(.iframe-embed iframe) {
-  width: 100%;
-  min-height: 400px;
-}
-
-/* Dark mode embed styles */
-.dark .tiptap-editor__content.prose :deep(.embed-wrapper) {
-  border-color: #4b5563;
-}
-
-.dark .tiptap-editor__content.prose :deep(.embed-header) {
-  background-color: #374151;
-  border-bottom-color: #4b5563;
-}
 </style>

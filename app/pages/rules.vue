@@ -8,6 +8,7 @@
       </UDashboardNavbar>
     </template>
 
+
     <template class="-ms-1" #body>
       <client-only>
         <div class="rules-editor">
