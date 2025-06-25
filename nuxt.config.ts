@@ -14,6 +14,20 @@ export default defineNuxtConfig({
     '@nuxtjs/supabase'
   ],
 
+  css: [
+    // TinyMCE dark UI skin
+    'tinymce/skins/ui/oxide-dark/skin.min.css',
+    // TinyMCE dark content (iframe) styles
+    'tinymce/skins/ui/oxide-dark/content.min.css',
+    // (any other global CSS you already had)
+  ],
+
+  runtimeConfig: {
+    public: {
+      tinymceApiKey: process.env.TINYMCE_API_KEY || 'your-fallback‐key',
+    }
+  },
+
   components: {
     dirs: [
       '~/components'

@@ -1,0 +1,15 @@
+images/
+├── users/
+│   └── {user_id}/
+│       ├── trades/
+│       │   └── {trade_id}/
+│       │       ├── image1.jpg
+│       │       └── image2.png
+│       └── pages/
+│           ├── profile/
+│           │   └── avatar.jpg
+│           └── notes/
+│               └── content-images/
+└── public/
+    └── app-assets/
+        └── logos/
