@@ -27,3 +27,8 @@ logs
 .history
 
 /generated/prisma
+
+# We’re on npm only now
+pnpm-lock.yaml
+.pnpmfile.cjs
+
