@@ -340,7 +340,7 @@ const editor = useEditor({
     HorizontalRule,
     History,
     TaskList,
-    CustomTaskItem.configure({  // Use CustomTaskItem instead of TaskItem
+    TaskItem.configure({  // Use CustomTaskItem instead of TaskItem
       nested: true,
     }),
 
@@ -568,6 +568,10 @@ onBeforeUnmount(() => {
 
 .tiptap-editor__content :deep(.tiptap ul[data-type="taskList"] input[type="checkbox"]) {
   cursor: pointer;
+}
+
+.tiptap-editor__content :deep(ul[data-type="taskList"] li) {
+  max-height: 1.7rem; /* Adjust this value as needed */
 }
 
 
