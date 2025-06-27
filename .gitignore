@@ -32,3 +32,7 @@ logs
 pnpm-lock.yaml
 .pnpmfile.cjs
 
+# CSV import backups
+app/data/csv-imports/
+
+

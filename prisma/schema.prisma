@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -81,4 +82,26 @@ model RoundTurn {
   openTrade   Trade @relation("RoundTurnOpenTrade",   fields: [openTradeId],   references: [id])
   closeOrder  Order @relation("RoundTurnCloseOrder",  fields: [closeOrderId],  references: [id])
   closeTrade  Trade @relation("RoundTurnCloseTrade",  fields: [closeTradeId],  references: [id])
+}
+
+model TopStepCSV {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractName    String    // CSV "ContractName"
+  enteredAt       DateTime  // CSV "EnteredAt"
+  exitedAt        DateTime  // CSV "ExitedAt"
+  entryPrice      Float     // CSV "EntryPrice"
+  exitPrice       Float     // CSV "ExitPrice"
+  fees            Float     // CSV "Fees"
+  profitAndLoss   Float     // CSV "PnL"
+  size            Int       // CSV "Size"
+  type            String    // CSV "Type" (Long/Short)
+  tradeDay        DateTime  // CSV "TradeDay"
+  tradeDuration   String    // CSV "TradeDuration" (raw format like "00:05:52.4602220")
+
+  // Metadata
+  importedAt      DateTime  @default(now())
+
+  @@index([contractName])
+  @@index([enteredAt])
+  @@index([tradeDay])
 }
