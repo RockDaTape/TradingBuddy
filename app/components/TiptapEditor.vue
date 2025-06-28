@@ -1,162 +1,195 @@
 <template>
   <client-only>
-    <UCard variant="subtle" class="w-full"
-           :ui="{
-              header: 'sticky -top-[25px] z-10 bg-[#202023] px-4 py-2'
-            }"
-
+    <!-- 🆕 NEW: Dynamic card variant and UI configuration -->
+    <UCard
+      :variant="variant"
+      class="w-full"
+      :ui="cardUI"
     >
-      <template #header>
+      <!-- 🆕 NEW: Conditional toolbar rendering -->
+      <template v-if="showToolbar" #header>
         <div class="control-group px-4">
           <div class="button-group">
-            <!-- Text Formatting -->
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleBold().run()"
-              :disabled="!editor?.can().chain().focus().toggleBold().run()"
-              :active="editor?.isActive('bold')"
-              icon="i-lucide-bold"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleItalic().run()"
-              :disabled="!editor?.can().chain().focus().toggleItalic().run()"
-              :active="editor?.isActive('italic')"
-              icon="i-lucide-italic"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleStrike().run()"
-              :disabled="!editor?.can().chain().focus().toggleStrike().run()"
-              :active="editor?.isActive('strike')"
-              icon="i-lucide-strikethrough"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleCode().run()"
-              :disabled="!editor?.can().chain().focus().toggleCode().run()"
-              :active="editor?.isActive('code')"
-              icon="i-lucide-code"
-              square
-            />
+            <!-- Text Formatting Group -->
+            <template v-if="shouldShowButton('bold')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleBold().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleBold().run()"
+                :active="editor?.isActive('bold')"
+                icon="i-lucide-bold"
+                square
+              />
+            </template>
 
-            <!-- Divider -->
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <template v-if="shouldShowButton('italic')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleItalic().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleItalic().run()"
+                :active="editor?.isActive('italic')"
+                icon="i-lucide-italic"
+                square
+              />
+            </template>
 
-            <!-- Headings -->
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
-              :disabled="!editor?.can().chain().focus().toggleHeading({ level: 1 }).run()"
-              :active="editor?.isActive('heading', { level: 1 })"
-              icon="i-lucide-heading-1"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-              :disabled="!editor?.can().chain().focus().toggleHeading({ level: 2 }).run()"
-              :active="editor?.isActive('heading', { level: 2 })"
-              icon="i-lucide-heading-2"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
-              :disabled="!editor?.can().chain().focus().toggleHeading({ level: 3 }).run()"
-              :active="editor?.isActive('heading', { level: 3 })"
-              icon="i-lucide-heading-3"
-              square
-            />
+            <template v-if="shouldShowButton('strike')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleStrike().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleStrike().run()"
+                :active="editor?.isActive('strike')"
+                icon="i-lucide-strikethrough"
+                square
+              />
+            </template>
 
-            <!-- Divider -->
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <template v-if="shouldShowButton('code')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleCode().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleCode().run()"
+                :active="editor?.isActive('code')"
+                icon="i-lucide-code"
+                square
+              />
+            </template>
 
-            <!-- Lists -->
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleBulletList().run()"
-              :disabled="!editor?.can().chain().focus().toggleBulletList().run()"
-              :active="editor?.isActive('bulletList')"
-              icon="i-lucide-list"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleOrderedList().run()"
-              :disabled="!editor?.can().chain().focus().toggleOrderedList().run()"
-              :active="editor?.isActive('orderedList')"
-              icon="i-lucide-list-ordered"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              active-variant="solid"
-              active-color="primary"
-              @click="editor?.chain().focus().toggleTaskList().run()"
-              :disabled="!editor?.can().chain().focus().toggleTaskList().run()"
-              :active="editor?.isActive('taskList')"
-              icon="i-lucide-check-square"
-              square
-            />
+            <!-- 🆕 NEW: Conditional divider after text formatting -->
+            <div v-if="shouldShowDivider(['bold', 'italic', 'strike', 'code'])" class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
-            <!-- Divider -->
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <!-- Headings Group -->
+            <template v-if="shouldShowButton('heading1')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleHeading({ level: 1 }).run()"
+                :active="editor?.isActive('heading', { level: 1 })"
+                icon="i-lucide-heading-1"
+                square
+              />
+            </template>
 
-            <!-- Other Elements -->
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="editor?.chain().focus().setHorizontalRule().run()"
-              :disabled="!editor?.can().chain().focus().setHorizontalRule().run()"
-              icon="i-lucide-minus"
-              square
-            />
+            <template v-if="shouldShowButton('heading2')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleHeading({ level: 2 }).run()"
+                :active="editor?.isActive('heading', { level: 2 })"
+                icon="i-lucide-heading-2"
+                square
+              />
+            </template>
+
+            <template v-if="shouldShowButton('heading3')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleHeading({ level: 3 }).run()"
+                :active="editor?.isActive('heading', { level: 3 })"
+                icon="i-lucide-heading-3"
+                square
+              />
+            </template>
+
+            <!-- 🆕 NEW: Conditional divider after headings -->
+            <div v-if="shouldShowDivider(['heading1', 'heading2', 'heading3'])" class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+            <!-- Lists Group -->
+            <template v-if="shouldShowButton('bulletList')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleBulletList().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleBulletList().run()"
+                :active="editor?.isActive('bulletList')"
+                icon="i-lucide-list"
+                square
+              />
+            </template>
+
+            <template v-if="shouldShowButton('orderedList')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleOrderedList().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleOrderedList().run()"
+                :active="editor?.isActive('orderedList')"
+                icon="i-lucide-list-ordered"
+                square
+              />
+            </template>
+
+            <template v-if="shouldShowButton('taskList')">
+              <UButton
+                size="sm"
+                variant="outline"
+                active-variant="solid"
+                active-color="primary"
+                @click="editor?.chain().focus().toggleTaskList().run()"
+                :disabled="readonly || !editor?.can().chain().focus().toggleTaskList().run()"
+                :active="editor?.isActive('taskList')"
+                icon="i-lucide-check-square"
+                square
+              />
+            </template>
+
+            <!-- 🆕 NEW: Conditional divider after lists -->
+            <div v-if="shouldShowDivider(['bulletList', 'orderedList', 'taskList'])" class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+            <!-- Other Elements Group -->
+            <template v-if="shouldShowButton('horizontalRule')">
+              <UButton
+                size="sm"
+                variant="outline"
+                @click="editor?.chain().focus().setHorizontalRule().run()"
+                :disabled="readonly || !editor?.can().chain().focus().setHorizontalRule().run()"
+                icon="i-lucide-minus"
+                square
+              />
+            </template>
 
             <!-- Image Upload Button -->
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="triggerImageUpload"
-              icon="i-lucide-image"
-              square
-              :loading="isUploading"
-              :disabled="isUploading"
-            />
+            <template v-if="shouldShowButton('image')">
+              <UButton
+                size="sm"
+                variant="outline"
+                @click="triggerImageUpload"
+                icon="i-lucide-image"
+                square
+                :loading="isUploading"
+                :disabled="readonly || isUploading"
+              />
+            </template>
 
-            <!-- Hidden file input -->
+            <!-- Hidden file input (only show if image button is enabled) -->
             <input
+              v-if="shouldShowButton('image')"
               ref="fileInput"
               type="file"
               accept="image/*"
@@ -164,50 +197,60 @@
               style="display: none;"
             />
 
-            <!-- Add embed button after image button -->
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="openEmbedDialog"
-              icon="i-lucide-video"
-              square
-              title="Add Embed"
-            />
+            <!-- Embed button -->
+            <template v-if="shouldShowButton('embed')">
+              <UButton
+                size="sm"
+                variant="outline"
+                @click="openEmbedDialog"
+                icon="i-lucide-video"
+                square
+                :disabled="readonly"
+                title="Add Embed"
+              />
+            </template>
 
-            <!-- Divider -->
-            <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+            <!-- 🆕 NEW: Conditional divider after media elements -->
+            <div v-if="shouldShowDivider(['horizontalRule', 'image', 'embed'])" class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
-            <!-- Undo/Redo -->
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="editor?.chain().focus().undo().run()"
-              :disabled="!editor?.can().chain().focus().undo().run()"
-              icon="i-lucide-undo"
-              square
-            />
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="editor?.chain().focus().redo().run()"
-              :disabled="!editor?.can().chain().focus().redo().run()"
-              icon="i-lucide-redo"
-              square
-            />
+            <!-- Undo/Redo Group -->
+            <template v-if="shouldShowButton('undo')">
+              <UButton
+                size="sm"
+                variant="outline"
+                @click="editor?.chain().focus().undo().run()"
+                :disabled="readonly || !editor?.can().chain().focus().undo().run()"
+                icon="i-lucide-undo"
+                square
+              />
+            </template>
+
+            <template v-if="shouldShowButton('redo')">
+              <UButton
+                size="sm"
+                variant="outline"
+                @click="editor?.chain().focus().redo().run()"
+                :disabled="readonly || !editor?.can().chain().focus().redo().run()"
+                icon="i-lucide-redo"
+                square
+              />
+            </template>
           </div>
         </div>
       </template>
+
       <template #default>
+        <!-- 🆕 NEW: Using computed editor classes -->
         <editor-content
           v-if="editor"
           :editor="editor"
-          class="tiptap-editor__content prose max-w-none"
+          :class="editorClasses"
         />
       </template>
     </UCard>
 
-    <!-- Custom Embed Modal -->
-    <div v-if="showEmbedDialog" class="fixed inset-0 z-50 flex items-center justify-center">
+    <!-- Custom Embed Modal (unchanged, but only shows if embed is enabled) -->
+    <div v-if="showEmbedDialog && shouldShowButton('embed')" class="fixed inset-0 z-50 flex items-center justify-center">
       <!-- Backdrop -->
       <div
         class="absolute inset-0 bg-black bg-opacity-50"
@@ -290,7 +333,6 @@ import Image from '@tiptap/extension-image'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 
-
 import { EmbedExtension } from '../extensions/embed'
 
 // Custom TaskItem extension like in the docs
@@ -298,32 +340,124 @@ const CustomTaskItem = TaskItem.extend({
   content: 'inline*',
 })
 
-// Props: initial HTML content and context
-const props = defineProps<{
+// 🆕 NEW: Props interface for reusability
+interface Props {
+  // Required props (keeping backward compatibility)
   initialContent: string
   context?: 'trade' | 'page' | 'note'
   contextId?: string
-}>()
 
-// Emit update events
+  // 🆕 NEW: Toolbar configuration options
+  toolbar?: 'full' | 'minimal' | 'compact' | 'none' | string[]
+
+  // 🆕 NEW: Editor appearance options
+  readonly?: boolean
+  placeholder?: string
+  minHeight?: string
+  maxHeight?: string
+  variant?: 'subtle' | 'outline' | 'soft' | 'solid'
+
+  // 🆕 NEW: Auto-save functionality
+  autoSave?: boolean
+  autoSaveDelay?: number
+}
+
+// Props with defaults (keeping your existing props working)
+const props = withDefaults(defineProps<Props>(), {
+  // Default values that maintain current behavior
+  toolbar: 'full',
+  readonly: false,
+  placeholder: 'Start typing...',
+  minHeight: '200px',
+  variant: 'subtle',
+  autoSave: false,
+  autoSaveDelay: 2000
+})
+
+// 🆕 NEW: Enhanced emit events
 const emit = defineEmits<{
   (e: 'update', html: string): void
+  (e: 'save', html: string): void  // New save event for auto-save
 }>()
 
-// Composables
+// 🆕 NEW: Toolbar configuration mapping
+const toolbarConfigs = {
+  full: ['bold', 'italic', 'strike', 'code', 'heading1', 'heading2', 'heading3', 'bulletList', 'orderedList', 'taskList', 'horizontalRule', 'image', 'embed', 'undo', 'redo'],
+  minimal: ['bold', 'italic', 'bulletList', 'orderedList'],
+  compact: ['bold', 'italic', 'bulletList'],
+  none: []
+}
+
+// 🆕 NEW: Computed toolbar configuration
+const toolbarConfig = computed(() => {
+  if (Array.isArray(props.toolbar)) {
+    return props.toolbar
+  }
+  return toolbarConfigs[props.toolbar as keyof typeof toolbarConfigs] || toolbarConfigs.full
+})
+
+// 🆕 NEW: Show/hide toolbar based on config
+const showToolbar = computed(() => props.toolbar !== 'none' && toolbarConfig.value.length > 0)
+
+// 🆕 NEW: Dynamic card UI based on props
+const cardUI = computed(() => ({
+  header: showToolbar.value ? 'sticky -top-[25px] z-10 bg-[#202023] px-4 py-2' : ''
+}))
+
+// 🆕 NEW: Dynamic editor styles
+const editorClasses = computed(() => {
+  const baseClasses = 'tiptap-editor__content prose max-w-none'
+  return baseClasses
+})
+
+const editorAttributes = computed(() => ({
+  class: `prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none p-4`,
+  style: `min-height: ${props.minHeight}; ${props.maxHeight ? `max-height: ${props.maxHeight}; overflow-y: auto;` : ''}`,
+  'data-placeholder': props.placeholder,
+}))
+
+// Existing composables and refs (unchanged)
 const { uploadImage } = useImageUpload()
 const toast = useToast()
 
-// File input reference and loading state
 const fileInput = ref<HTMLInputElement>()
 const isUploading = ref(false)
 
-// Embed dialog state
 const showEmbedDialog = ref(false)
 const embedUrl = ref('')
 const embedTitle = ref('')
 
-// Initialize Tiptap editor
+// 🆕 NEW: Auto-save functionality
+let autoSaveTimeout: NodeJS.Timeout | null = null
+
+const handleUpdate = (html: string) => {
+  // Always emit update event (existing behavior)
+  emit('update', html)
+
+  // 🆕 NEW: Auto-save logic
+  if (props.autoSave) {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout)
+    }
+    autoSaveTimeout = setTimeout(() => {
+      emit('save', html)
+    }, props.autoSaveDelay)
+  }
+}
+
+// 🆕 NEW: Helper function to check if toolbar button should show
+const shouldShowButton = (buttonName: string): boolean => {
+  return toolbarConfig.value.includes(buttonName)
+}
+
+// 🆕 NEW: Helper function to show dividers conditionally
+const shouldShowDivider = (buttonGroup: string[]): boolean => {
+  const hasButtonsInGroup = buttonGroup.some(button => toolbarConfig.value.includes(button))
+  const hasButtonsAfterGroup = toolbarConfig.value.some(button => !buttonGroup.includes(button))
+  return hasButtonsInGroup && hasButtonsAfterGroup
+}
+
+// Initialize Tiptap editor (updated with new computed properties)
 const editor = useEditor({
   extensions: [
     Document,
@@ -340,39 +474,50 @@ const editor = useEditor({
     HorizontalRule,
     History,
     TaskList,
-    TaskItem.configure({  // Use CustomTaskItem instead of TaskItem
+    TaskItem.configure({
       nested: true,
     }),
-
     Image.configure({
       inline: true,
-      allowBase64: false, // We're using Supabase now
+      allowBase64: false,
       HTMLAttributes: {
         class: 'editor-image',
       },
     }),
-    EmbedExtension, // Custom embed extension
+    EmbedExtension,
   ],
   content: props.initialContent,
+  editable: !props.readonly, // 🆕 NEW: Respect readonly prop
   onUpdate({ editor }) {
     const html = editor.getHTML()
-    emit('update', html)
+    handleUpdate(html) // 🆕 NEW: Use new handler with auto-save
   },
   editorProps: {
-    attributes: {
-      class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4',
-    },
+    attributes: editorAttributes.value, // 🆕 NEW: Use computed attributes
   },
 })
 
-// Open embed dialog with debugging
+// 🆕 NEW: Watch for readonly changes
+watch(() => props.readonly, (newReadonly) => {
+  if (editor.value) {
+    editor.value.setEditable(!newReadonly)
+  }
+})
+
+// 🆕 NEW: Watch for content changes from parent
+watch(() => props.initialContent, (newContent) => {
+  if (editor.value && editor.value.getHTML() !== newContent) {
+    editor.value.commands.setContent(newContent)
+  }
+})
+
+// Existing functions (unchanged)
 const openEmbedDialog = () => {
   console.log('🔵 Opening embed dialog...')
   showEmbedDialog.value = true
   console.log('🔵 showEmbedDialog.value:', showEmbedDialog.value)
 }
 
-// Insert embed function with debugging
 const insertEmbed = () => {
   console.log('🟢 Inserting embed...', { url: embedUrl.value, title: embedTitle.value })
 
@@ -385,7 +530,6 @@ const insertEmbed = () => {
     console.log('🟢 Embed insertion success:', success)
 
     if (success) {
-      // Reset form
       embedUrl.value = ''
       embedTitle.value = ''
       showEmbedDialog.value = false
@@ -407,12 +551,10 @@ const insertEmbed = () => {
   }
 }
 
-// Trigger file input click
 const triggerImageUpload = () => {
   fileInput.value?.click()
 }
 
-// Handle image upload with Supabase
 const handleImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -422,21 +564,19 @@ const handleImageUpload = async (event: Event) => {
   isUploading.value = true
 
   try {
-    // Upload to Supabase
     const imageUrl = await uploadImage(
       file,
       props.context || 'page',
       props.contextId
     )
 
-    // Insert image into editor
     if (editor.value) {
       editor.value.chain().focus().setImage({ src: imageUrl }).run()
     }
 
     toast.add({
       title: 'Image uploaded successfully',
-      color: 'success'  // ✅ Valid Nuxt UI color
+      color: 'success'
     })
 
   } catch (error) {
@@ -448,12 +588,17 @@ const handleImageUpload = async (event: Event) => {
     })
   } finally {
     isUploading.value = false
-    target.value = '' // Clear the input
+    target.value = ''
   }
 }
 
-// Clean up editor instance
+// Cleanup (enhanced with auto-save cleanup)
 onBeforeUnmount(() => {
+  // 🆕 NEW: Clear auto-save timeout
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout)
+  }
+
   if (editor.value) {
     editor.value.destroy()
   }
