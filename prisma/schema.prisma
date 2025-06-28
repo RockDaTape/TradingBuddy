@@ -40,10 +40,10 @@ model Order {
 }
 
 model Rules {
-  id         String   @id @default(uuid())
+  id         String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   content    String   @default("")
   created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  updated_at DateTime @default(now()) @updatedAt
 }
 
 model RoundTurn {
@@ -76,7 +76,7 @@ model RoundTurn {
 }
 
 model TopStepCSV {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String   @id
   contractName  String
   enteredAt     DateTime
   exitedAt      DateTime

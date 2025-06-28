@@ -626,20 +626,17 @@ onBeforeUnmount(() => {
 .tiptap-editor__content.prose :deep(h1) {
   font-size: 2rem;
   font-weight: bold;
-  margin-top: 1.5rem;
   margin-bottom: 1rem;
 }
 .tiptap-editor__content.prose :deep(h2) {
   font-size: 1.5rem;
   font-weight: bold;
-  margin-top: 1.25rem;
   margin-bottom: 0.75rem;
 }
 .tiptap-editor__content.prose :deep(h3) {
   font-size: 1.25rem;
   font-weight: bold;
   margin-top: 1rem;
-  margin-bottom: 0.5rem;
 }
 
 /* Paragraph styles */
