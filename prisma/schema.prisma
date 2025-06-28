@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,66 +8,60 @@ datasource db {
 }
 
 model Trade {
-  id                BigInt   @id
-  accountId         Int
-  contractId        String
-  creationTimestamp DateTime
-  price             Float
-  profitAndLoss     Float?
-  fees              Float
-  side              Int
-  size              Int
-  voided            Boolean
-  orderId           BigInt
-
-  roundTurnOpenTrades  RoundTurn[] @relation("RoundTurnOpenTrade")
+  id                   BigInt      @id
+  accountId            Int
+  contractId           String
+  creationTimestamp    DateTime
+  price                Float
+  profitAndLoss        Float?
+  fees                 Float
+  side                 Int
+  size                 Int
+  voided               Boolean
+  orderId              BigInt
   roundTurnCloseTrades RoundTurn[] @relation("RoundTurnCloseTrade")
+  roundTurnOpenTrades  RoundTurn[] @relation("RoundTurnOpenTrade")
 }
 
 model Order {
-  id                BigInt    @id
-  accountId         Int
-  contractId        String
-  creationTimestamp DateTime
-  updateTimestamp   DateTime?
-  status            Int
-  type              Int
-  side              Int
-  size              Int
-  limitPrice        Float?
-  stopPrice         Float?
-
-  roundTurnOpenOrders  RoundTurn[] @relation("RoundTurnOpenOrder")
+  id                   BigInt      @id
+  accountId            Int
+  contractId           String
+  creationTimestamp    DateTime
+  updateTimestamp      DateTime?
+  status               Int
+  type                 Int
+  side                 Int
+  size                 Int
+  limitPrice           Float?
+  stopPrice            Float?
   roundTurnCloseOrders RoundTurn[] @relation("RoundTurnCloseOrder")
+  roundTurnOpenOrders  RoundTurn[] @relation("RoundTurnOpenOrder")
 }
 
-model rules {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  created_at DateTime  @default(now()) @db.Timestamptz(6)
-  content    String?   @default("")
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+model Rules {
+  id         String   @id @default(uuid())
+  content    String   @default("")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model RoundTurn {
-  roundTurnId           String    @id
+  roundTurnId           String   @id
   accountId             Int
   contractId            String
-
   openOrderId           BigInt
   openOrderTimestamp    DateTime
   openTradeId           BigInt
   openPrice             Float
-
   intraHighPrice        Float
   intraLowPrice         Float
   maxFavorableExcursion Float
   maxAdverseExcursion   Float
-
   closeOrderId          BigInt
   closeOrderTimestamp   DateTime
   closeTradeId          BigInt
   closePrice            Float
-
   profitAndLoss         Float
   fees                  Float
   side                  Int
@@ -76,30 +69,26 @@ model RoundTurn {
   durationSeconds       Int
   voided                Boolean
   relatedOrderIds       String[]
-
-  // Relations back to Trade & Order:
-  openOrder   Order @relation("RoundTurnOpenOrder",   fields: [openOrderId],   references: [id])
-  openTrade   Trade @relation("RoundTurnOpenTrade",   fields: [openTradeId],   references: [id])
-  closeOrder  Order @relation("RoundTurnCloseOrder",  fields: [closeOrderId],  references: [id])
-  closeTrade  Trade @relation("RoundTurnCloseTrade",  fields: [closeTradeId],  references: [id])
+  closeOrder            Order    @relation("RoundTurnCloseOrder", fields: [closeOrderId], references: [id])
+  closeTrade            Trade    @relation("RoundTurnCloseTrade", fields: [closeTradeId], references: [id])
+  openOrder             Order    @relation("RoundTurnOpenOrder", fields: [openOrderId], references: [id])
+  openTrade             Trade    @relation("RoundTurnOpenTrade", fields: [openTradeId], references: [id])
 }
 
 model TopStepCSV {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  contractName    String    // CSV "ContractName"
-  enteredAt       DateTime  // CSV "EnteredAt"
-  exitedAt        DateTime  // CSV "ExitedAt"
-  entryPrice      Float     // CSV "EntryPrice"
-  exitPrice       Float     // CSV "ExitPrice"
-  fees            Float     // CSV "Fees"
-  profitAndLoss   Float     // CSV "PnL"
-  size            Int       // CSV "Size"
-  type            String    // CSV "Type" (Long/Short)
-  tradeDay        DateTime  // CSV "TradeDay"
-  tradeDuration   String    // CSV "TradeDuration" (raw format like "00:05:52.4602220")
-
-  // Metadata
-  importedAt      DateTime  @default(now())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractName  String
+  enteredAt     DateTime
+  exitedAt      DateTime
+  entryPrice    Float
+  exitPrice     Float
+  fees          Float
+  profitAndLoss Float
+  size          Int
+  type          String
+  tradeDay      DateTime
+  tradeDuration String
+  importedAt    DateTime @default(now())
 
   @@index([contractName])
   @@index([enteredAt])

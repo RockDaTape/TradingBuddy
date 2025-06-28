@@ -13,7 +13,7 @@
       <client-only>
         <div class="rules-editor">
           <TiptapEditor
-            v-if="loaded"
+            v-if="isLoaded"
             :initial-content="content"
             @update="save"
           />
@@ -24,9 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRules } from '../composables/useRules'
 
-const { content, save } = useRules()
-const loaded = computed(() => content.value !== '')  // or content.value !== null
+const { content, save, isLoaded } = useRules()
 </script>
