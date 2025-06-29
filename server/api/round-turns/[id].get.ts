@@ -2,15 +2,13 @@
  * server/api/round-turns/[id].get.ts
  *
  * API endpoint to fetch individual trade (round turn) data by ID.
- * Returns the complete trade data including notes field.
+ * Returns the complete trade data including the notes field.
  *
  * Route: GET /api/round-turns/{id}
  * Returns: Individual RoundTurn object or 404 if not found
  */
 
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../../../server/db/client'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -42,7 +40,7 @@ export default defineEventHandler(async (event) => {
     // Return the trade data
     return trade
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching individual trade:', error)
 
     // If it's already a structured error, re-throw it

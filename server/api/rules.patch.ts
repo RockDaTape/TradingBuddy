@@ -2,15 +2,13 @@
  * server/api/rules.patch.ts
  *
  * PATCH endpoint for updating trading rules content in the database.
- * This endpoint handles auto-save functionality from the TiptapEditor,
- * updating existing rules or creating new entry if none exists.
+ * This endpoint handles auto-save functionality from the TipTap editor,
+ * updating existing rules or creating a new entry if none exists.
  *
  * Route: PATCH /api/rules
  */
 
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../db/client'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -20,16 +18,18 @@ export default defineEventHandler(async (event) => {
     console.log('💾 Updating rules content, length:', content.length)
 
     // Try to find existing rules record
-    let rules = await prisma.rules.findFirst({
+    const existingRules = await prisma.rules.findFirst({
       select: { id: true }
     })
 
-    if (rules) {
+    let rules
+
+    if (existingRules) {
       // Update existing rules record
-      console.log('📝 Updating existing rules with ID:', rules.id)
+      console.log('📝 Updating existing rules with ID:', existingRules.id)
 
       rules = await prisma.rules.update({
-        where: { id: rules.id },
+        where: { id: existingRules.id },
         data: {
           content: content,
           updated_at: new Date()  // Use snake_case field name
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
 
     console.log('✅ Rules saved successfully')
 
-    // Return camelCase fields for the frontend
+    // Return camelCase fields to the frontend
     return {
       id: rules.id,
       content: rules.content,
@@ -68,19 +68,17 @@ export default defineEventHandler(async (event) => {
       updatedAt: rules.updated_at.toISOString()
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in rules PATCH endpoint:', error)
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code
     })
 
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to update trading rules in database: ${error.message}`
+      statusMessage: `Failed to update trading rules in database: ${error?.message || 'Unknown error'}`
     })
-  } finally {
-    await prisma.$disconnect()
   }
 })

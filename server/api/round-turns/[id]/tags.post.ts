@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../db/client'
 import { z } from 'zod'
 
 const createTagSchema = z.object({
@@ -11,22 +11,52 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const validatedData = createTagSchema.parse(body)
 
-    const tag = await prisma.tag.create({
+    // Check if the tag group exists
+    const tagGroup = await prisma.tagGroup.findUnique({
+      where: { id: validatedData.tag_group_id }
+    })
+
+    if (!tagGroup) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Tag group not found'
+      })
+    }
+
+    // Check for duplicate tag names within the same group
+    const existingTag = await prisma.tag.findFirst({
+      where: {
+        name: validatedData.name,
+        tag_group_id: validatedData.tag_group_id
+      }
+    })
+
+    if (existingTag) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'A tag with this name already exists in this group'
+      })
+    }
+
+    // Create the new tag
+    return await prisma.tag.create({
       data: validatedData,
       include: {
         tag_group: true,
         round_turn_tags: true
       }
     })
-
-    return tag
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid input data',
         data: error.errors
       })
+    }
+
+    if (error.statusCode) {
+      throw error
     }
 
     console.error('Error creating tag:', error)

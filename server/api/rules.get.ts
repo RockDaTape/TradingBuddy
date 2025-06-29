@@ -8,11 +8,9 @@
  * Route: GET /api/rules
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../db/client'
 
-const prisma = new PrismaClient()
-
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
     console.log('📖 Fetching rules from database...')
 
@@ -30,7 +28,7 @@ export default defineEventHandler(async (event) => {
     if (!rules) {
       console.log('📝 No rules found, creating default entry...')
 
-      // Default content with proper HTML structure for TiptapEditor
+      // Default content with proper HTML structure for TipTap editor
       const defaultContent = `
         <h1>Welcome to Your Trading Rulebook</h1>
         <p>This is your space to define the personal guidelines that keep you consistent, disciplined, and accountable—day in and day out.</p>
@@ -58,7 +56,7 @@ export default defineEventHandler(async (event) => {
         })
 
         console.log('✅ Created default rules entry with ID:', rules.id)
-      } catch (createError) {
+      } catch (createError: any) {
         console.error('❌ Failed to create default rules entry:', createError)
         throw createError
       }
@@ -74,19 +72,17 @@ export default defineEventHandler(async (event) => {
       updatedAt: rules.updated_at.toISOString()
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error in rules GET endpoint:', error)
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code
     })
 
     throw createError({
       statusCode: 500,
-      statusMessage: `Failed to fetch trading rules from database: ${error.message}`
+      statusMessage: `Failed to fetch trading rules from database: ${error?.message || 'Unknown error'}`
     })
-  } finally {
-    await prisma.$disconnect()
   }
 })
