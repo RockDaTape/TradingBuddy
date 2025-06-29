@@ -6,17 +6,20 @@
           <UDashboardSidebarCollapse />
         </template>
 
-        <!-- 🆕 NEW: Optional save indicator in header -->
+        <!-- Save indicator in header -->
         <template #right>
           <div class="flex items-center gap-2">
             <!-- Auto-save status indicator -->
-            <div v-if="saveStatus" class="flex items-center gap-1 text-sm text-gray-500">
+            <div v-if="saveStatus || pending" class="flex items-center gap-1 text-sm text-gray-500">
               <UIcon
-                :name="saveStatus === 'saving' ? 'i-lucide-loader-2' : 'i-lucide-check'"
-                :class="{ 'animate-spin': saveStatus === 'saving' }"
+                :name="(saveStatus === 'saving' || pending) ? 'i-lucide-loader-2' : 'i-lucide-check'"
+                :class="{ 'animate-spin': saveStatus === 'saving' || pending }"
                 class="w-4 h-4"
               />
-              <span>{{ saveStatus === 'saving' ? 'Saving...' : 'Saved' }}</span>
+              <span>{{
+                  pending ? 'Loading...' :
+                    saveStatus === 'saving' ? 'Saving...' : 'Saved'
+                }}</span>
             </div>
           </div>
         </template>
@@ -26,10 +29,10 @@
     <template #body>
       <client-only>
         <div class="rules-editor">
-          <!-- 🆕 NEW: Enhanced TiptapEditor with new props while maintaining compatibility -->
+          <!-- Enhanced TiptapEditor with new API integration -->
           <TiptapEditor
-            v-if="isLoaded"
-            :initial-content="content"
+            v-if="data"
+            :initial-content="data.content || ''"
             @update="handleUpdate"
             @save="handleSave"
 
@@ -42,6 +45,12 @@
             min-height="400px"
             variant="subtle"
           />
+
+          <!-- Loading state when no data yet -->
+          <div v-else-if="pending" class="flex items-center justify-center p-8">
+            <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-gray-400" />
+            <span class="ml-2 text-gray-500">Loading your trading rules...</span>
+          </div>
         </div>
       </client-only>
     </template>
@@ -49,29 +58,47 @@
 </template>
 
 <script setup lang="ts">
-import { useRules } from '../composables/useRules'
+import type { Rules } from '~/types/Rules'
 
-// 🆕 NEW: Enhanced state management
-const { content, save, isLoaded } = useRules()
+// Page meta for better SEO and navigation
+definePageMeta({
+  title: 'Trading Rules',
+  description: 'Document and manage your trading rules and strategies'
+})
 
-// 🆕 NEW: Save status tracking for better UX
+// Fetch rules data from new API endpoint
+const { data, pending, refresh } = await useFetch<Rules>('/api/rules', {
+  key: 'rules',
+  default: () => ({ id: '', content: '', createdAt: '', updatedAt: '' })
+})
+
+// Save status tracking for better UX
 const saveStatus = ref<'saving' | 'saved' | null>(null)
 
-// 🆕 NEW: Enhanced update handler (immediate updates)
+// Enhanced update handler (immediate updates)
 const handleUpdate = (html: string) => {
   // This is called on every keystroke - just update content immediately
   // No need to save here since auto-save will handle it
   console.log('📝 Content updated, length:', html.length)
 }
 
-// 🆕 NEW: Enhanced save handler (triggered by auto-save)
+// Enhanced save handler (triggered by auto-save)
 const handleSave = async (html: string) => {
   try {
     saveStatus.value = 'saving'
     console.log('💾 Auto-saving rules...')
 
-    // Use your existing save function
-    await save(html)
+    // Use new PATCH API endpoint
+    const updatedRules = await $fetch<Rules>('/api/rules', {
+      method: 'PATCH',
+      body: { content: html }
+    })
+
+    // Update local data with response
+    if (data.value) {
+      data.value.content = updatedRules.content
+      data.value.updatedAt = updatedRules.updatedAt
+    }
 
     saveStatus.value = 'saved'
     console.log('✅ Rules auto-saved successfully')
@@ -85,7 +112,7 @@ const handleSave = async (html: string) => {
     console.error('❌ Failed to save rules:', error)
     saveStatus.value = null
 
-    // 🆕 NEW: Optional error toast (if you want user feedback)
+    // Optional error toast (you can uncomment if you have toast setup)
     // const toast = useToast()
     // toast.add({
     //   title: 'Failed to save rules',
@@ -94,22 +121,16 @@ const handleSave = async (html: string) => {
     // })
   }
 }
-
-// 🆕 NEW: Page meta for better SEO and navigation
-definePageMeta({
-  title: 'Trading Rules',
-  description: 'Document and manage your trading rules and strategies'
-})
 </script>
 
 <style scoped>
-/* 🆕 NEW: Optional custom styles for rules page */
+/* Optional custom styles for rules page */
 .rules-editor {
   /* Ensure the editor takes full height */
   height: 100%;
 }
 
-/* 🆕 NEW: Optional styles for save indicator */
+/* Optional styles for save indicator */
 .save-indicator {
   transition: opacity 0.2s ease-in-out;
 }
