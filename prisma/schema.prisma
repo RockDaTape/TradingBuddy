@@ -56,6 +56,9 @@ model RoundTurn {
   importedAt DateTime @default(now())
   notes      String?  // Add this line
 
+  // Relationship: Tags associated with this round turn trade
+  trade_tags RoundTurnTag[]
+
   @@index([symbol])
   @@index([entryTime])
 }
@@ -78,4 +81,47 @@ model TopStepCSV {
   @@index([contractName])
   @@index([enteredAt])
   @@index([tradeDay])
+}
+
+// Tag Group model - represents categories of tags (e.g., "Strategy", "Market Condition")
+model TagGroup {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Name of the tag group (e.g., "Strategy")
+  description String?  // Optional description of what this group represents
+  color       String?  // Optional hex color for UI display (#FF5733)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relationship: One tag group can have many tags
+  tags        Tag[]
+}
+
+// Tag model - individual tags within groups
+model Tag {
+  id           Int      @id @default(autoincrement())
+  name         String   // Name of the tag (e.g., "Scalping", "Swing Trade")
+  tag_group_id Int      // Foreign key to TagGroup
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relationships
+  tag_group         TagGroup      @relation(fields: [tag_group_id], references: [id], onDelete: Cascade)
+  round_turn_tags   RoundTurnTag[] // Junction table relationship
+
+  // Ensure tag names are unique within each group
+  @@unique([name, tag_group_id])
+}
+
+// Junction table - links round turn trades to tags (many-to-many relationship)
+model RoundTurnTag {
+  id            Int    @id @default(autoincrement())
+  round_turn_id String // Foreign key to RoundTurn (String to match RoundTurn.id)
+  tag_id        Int    // Foreign key to Tag
+
+  // Relationships
+  round_turn    RoundTurn @relation(fields: [round_turn_id], references: [id], onDelete: Cascade)
+  tag           Tag       @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  // Ensure a round turn can't have the same tag twice
+  @@unique([round_turn_id, tag_id])
 }

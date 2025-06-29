@@ -1,7 +1,7 @@
 <!--
   pages/trade/[id].vue
 
-  Individual trade journaling page - simplified to use existing notes column
+  Individual trade journaling page - now includes tag management functionality
 -->
 
 <template>
@@ -91,6 +91,25 @@
           </div>
         </UCard>
 
+        <!-- Tags Section -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Trade Tags</h3>
+              <div class="text-sm text-gray-500">
+                Organize your trades with tags for better analysis
+              </div>
+            </div>
+          </template>
+
+          <!-- Tag Selector Component -->
+          <TagSelector
+            :round-turn-id="tradeId"
+            :existing-tags="existingTags"
+            @tags-updated="handleTagsUpdated"
+          />
+        </UCard>
+
         <!-- Journal Editor Section -->
         <UCard>
           <template #header>
@@ -135,13 +154,28 @@ import type { RoundTurn } from '~/types/round-turns'
 const route = useRoute()
 const tradeId = computed(() => route.params.id as string)
 
-// Fetch trade data (includes notes)
-const { data: tradeData, pending, error } = await useFetch<RoundTurn>(
-  `/api/round-turns/${tradeId.value}`,
-  {
-    key: `trade-${tradeId.value}`
-  }
-)
+// Fetch trade data (includes notes and existing tags)
+const { data: tradeData, pending, error, refresh } = await useFetch<RoundTurn>(`/api/round-turns/${tradeId.value}`, {
+  key: `trade-${tradeId.value}`
+})
+
+// Extract existing tags from trade data
+const existingTags = computed(() => {
+  if (!tradeData.value?.round_turn_tags) return []
+
+  return tradeData.value.round_turn_tags.map(roundTurnTag => ({
+    id: roundTurnTag.tag.id,
+    name: roundTurnTag.tag.name,
+    tag_group: roundTurnTag.tag.tag_group
+  }))
+})
+
+// Handle tag updates
+const handleTagsUpdated = (updatedTags: any[]) => {
+  console.log('🏷️  Tags updated for trade:', tradeId.value, updatedTags)
+  // Optionally refresh the trade data to show updated tags
+  refresh()
+}
 
 // Handle content updates
 const handleUpdate = (html: string) => {

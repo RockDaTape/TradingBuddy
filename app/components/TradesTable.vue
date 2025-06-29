@@ -4,9 +4,10 @@
   A Vue component that displays trading round turns data in a paginated table format.
   Fetches trade data from an API based on date range and period filters, and presents
   it with formatted columns including Journal access, ID (clickable to copy), symbol,
-  size, entry/exit times and prices, P&L, fees, and direction.
+  size, entry/exit times and prices, P&L, fees, direction, and tags.
 
   The Journal column provides direct access to individual trade journaling pages.
+  The Tags column displays assigned tags as colored badges.
 -->
 
 <script setup lang="ts">
@@ -147,6 +148,45 @@ const columns = ref<TableColumn<RoundTurn>[]>([
   { accessorKey: 'symbol', header: 'Symbol' },
   { accessorKey: 'size', header: 'Size' },
   { accessorKey: 'direction', header: 'Direction' },
+
+  // ========================================
+  // Tags Column - Display assigned tags as badges
+  // ========================================
+  {
+    accessorKey: 'tags',
+    header: 'Tags',
+    cell: ({ row }) => {
+      const trade = row.original as RoundTurn
+
+      // Check if trade has tags
+      if (!trade.round_turn_tags || trade.round_turn_tags.length === 0) {
+        return h('span', {
+          class: 'text-gray-400 text-sm italic'
+        }, 'No tags')
+      }
+
+      // Create a container for multiple tag badges
+      return h('div', {
+        class: 'flex flex-wrap gap-1'
+      }, trade.round_turn_tags.map(roundTurnTag => {
+        const tag = roundTurnTag.tag
+        const tagGroup = tag.tag_group
+
+        // Resolve UBadge component for consistent styling
+        const UBadge = resolveComponent('UBadge')
+
+        return h(UBadge, {
+          size: 'xs',
+          variant: 'subtle',
+          // Use tag group color or default
+          color: tagGroup.color || 'gray',
+          key: tag.id
+        }, {
+          default: () => tag.name
+        })
+      }))
+    }
+  },
 
   // ========================================
   // Time Columns with Custom Formatting

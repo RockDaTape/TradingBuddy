@@ -24,13 +24,21 @@ const links = [[
     }
   },
   {
-  label: 'Trades',
-  icon: 'i-lucide-chart-line',
-  to: '/trades',
-  onSelect: () => {
-    open.value = false
-  }
-},
+    label: 'Trades',
+    icon: 'i-lucide-chart-line',
+    to: '/trades',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Tags',
+    icon: 'i-lucide-tag',
+    to: '/tags',
+    onSelect: () => {
+      open.value = false
+    }
+  },
 //   {
 //   label: 'Customers',
 //   icon: 'i-lucide-users',
@@ -40,39 +48,39 @@ const links = [[
 //   }
 // },
   {
-  label: 'Settings',
-  to: '/settings',
-  icon: 'i-lucide-settings',
-  defaultOpen: false,
-  type: 'trigger',
-  children: [{
-    label: 'General',
+    label: 'Settings',
     to: '/settings',
-    exact: true,
-    onSelect: () => {
-      open.value = false
-    }
-  },
-    {
-    label: 'Members',
-    to: '/settings/members',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Notifications',
-    to: '/settings/notifications',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Security',
-    to: '/settings/security',
-    onSelect: () => {
-      open.value = false
-    }
-  }]
-}], [{
+    icon: 'i-lucide-settings',
+    defaultOpen: false,
+    type: 'trigger',
+    children: [{
+      label: 'General',
+      to: '/settings',
+      exact: true,
+      onSelect: () => {
+        open.value = false
+      }
+    },
+      {
+        label: 'Members',
+        to: '/settings/members',
+        onSelect: () => {
+          open.value = false
+        }
+      }, {
+        label: 'Notifications',
+        to: '/settings/notifications',
+        onSelect: () => {
+          open.value = false
+        }
+      }, {
+        label: 'Security',
+        to: '/settings/security',
+        onSelect: () => {
+          open.value = false
+        }
+      }]
+  }], [{
   label: 'Feedback',
   icon: 'i-lucide-message-circle',
   to: '/',
@@ -137,9 +145,9 @@ onMounted(async () => {
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
 
-<!--      <template #header="{ collapsed }">-->
-<!--        <TeamsMenu :collapsed="collapsed" />-->
-<!--      </template>-->
+      <!--      <template #header="{ collapsed }">-->
+      <!--        <TeamsMenu :collapsed="collapsed" />-->
+      <!--      </template>-->
 
       <template #default="{ collapsed }">
         <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
