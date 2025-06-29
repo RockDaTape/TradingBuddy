@@ -43,17 +43,18 @@ model Rules {
 }
 
 model RoundTurn {
-  id         String   @id                    // Concatenated TopStep IDs
-  symbol     String                          // Contract name
-  size       Int                             // Total size
-  entryTime  DateTime                        // Entry timestamp
-  exitTime   DateTime                        // Exit timestamp
-  entryPrice Float                           // Weighted average entry
-  exitPrice  Float                           // Weighted average exit
-  pnl        Float                           // Total P&L
-  fees       Float                           // Total fees
-  direction  String                          // "Long" or "Short"
+  id         String   @id
+  symbol     String
+  size       Int
+  entryTime  DateTime
+  exitTime   DateTime
+  entryPrice Float
+  exitPrice  Float
+  pnl        Float
+  fees       Float
+  direction  String
   importedAt DateTime @default(now())
+  notes      String?  // Add this line
 
   @@index([symbol])
   @@index([entryTime])

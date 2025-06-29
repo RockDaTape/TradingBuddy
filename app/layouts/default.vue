@@ -24,9 +24,9 @@ const links = [[
     }
   },
   {
-  label: 'Analysis',
+  label: 'Trades',
   icon: 'i-lucide-chart-line',
-  to: '/analysis',
+  to: '/trades',
   onSelect: () => {
     open.value = false
   }

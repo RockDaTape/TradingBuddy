@@ -1,16 +1,20 @@
 <!--
-  TradeTable.vue
+  TradesTable.vue
 
   A Vue component that displays trading round turns data in a paginated table format.
   Fetches trade data from an API based on date range and period filters, and presents
-  it with formatted columns including ID (clickable to copy), symbol, size, entry/exit
-  times and prices, P&L, fees, and direction.
+  it with formatted columns including Journal access, ID (clickable to copy), symbol,
+  size, entry/exit times and prices, P&L, fees, and direction.
+
+  The Journal column provides direct access to individual trade journaling pages.
 -->
 
 <script setup lang="ts">
+// ========================================
 // Core Vue composition API imports
+// ========================================
 import { ref, computed, watch, resolveComponent } from 'vue'
-import { useFetch }            from 'nuxt/app'
+import { useFetch, navigateTo } from 'nuxt/app'  // Added navigateTo for page navigation
 import type { TableColumn }    from '@nuxt/ui'
 import type { RoundTurn }      from '~/types/round-turns'
 import { format }              from 'date-fns'
@@ -20,7 +24,7 @@ import { h } from 'vue'
 // ========================================
 // Component Props
 // ========================================
-// Accept period and date range from parent component (analysis.vue)
+// Accept period and date range from parent component (trades.vue)
 const props = defineProps<{
   period: Period  // Time period filter for the data
   range:  Range   // Date range object with start and end dates
@@ -72,7 +76,36 @@ const totalCount = computed(() =>                                 // Total count
 // ========================================
 // Define table columns with custom cell renderers and formatting
 const columns = ref<TableColumn<RoundTurn>[]>([
-  // ID Column - Clickable with truncation and copy-to-clipboard functionality
+  // ========================================
+  // Journal Column - FIRST COLUMN
+  // ========================================
+  // Provides access to individual trade journaling functionality
+  {
+    accessorKey: 'journal',  // Virtual column for journal access
+    header: 'Journal',
+    cell: ({ row }) => {
+      // Get the complete trade data from the row
+      const trade = row.original as RoundTurn
+
+      // Resolve NuxtUI Button component for consistent styling
+      const UButton = resolveComponent('UButton')
+
+      // Return a small button that navigates to the trade detail page
+      return h(UButton, {
+        size: 'xs',           // Extra small size for table cell
+        variant: 'outline',   // Outlined style to match table aesthetics
+        // Navigate to individual trade page using trade ID
+        onClick: () => navigateTo(`/trade/${trade.id}`)
+      }, {
+        // Button text content
+        default: () => 'Add'
+      })
+    }
+  },
+
+  // ========================================
+  // ID Column - Clickable with copy functionality
+  // ========================================
   {
     accessorKey: 'id',
     header: 'ID',
@@ -93,7 +126,6 @@ const columns = ref<TableColumn<RoundTurn>[]>([
         // Render clickable button with tooltip
         default: () => h('button', {
           // Style classes for hover effects and appearance
-          // TODO: Change the hoover from theme color border to a grey bg inline with the nav menu
           class: 'cursor-pointer text-primary-600 hover:text-primary-600 hover:border hover:border-primary-600 px-1 py-0.5 rounded text-left underline',
           // Click handler to copy full ID to clipboard
           onClick: async () => {
@@ -109,12 +141,16 @@ const columns = ref<TableColumn<RoundTurn>[]>([
     }
   },
 
-  // Basic text columns - Symbol, Size, Direction
+  // ========================================
+  // Basic Data Columns
+  // ========================================
   { accessorKey: 'symbol', header: 'Symbol' },
   { accessorKey: 'size', header: 'Size' },
   { accessorKey: 'direction', header: 'Direction' },
 
-  // Time columns with custom date formatting
+  // ========================================
+  // Time Columns with Custom Formatting
+  // ========================================
   {
     accessorKey: 'entryTime',
     header: 'Entry Time',
@@ -132,7 +168,9 @@ const columns = ref<TableColumn<RoundTurn>[]>([
     }
   },
 
-  // Price columns with currency formatting
+  // ========================================
+  // Price Columns with Currency Formatting
+  // ========================================
   {
     accessorKey: 'entryPrice',
     header: 'Entry Price',
@@ -150,6 +188,9 @@ const columns = ref<TableColumn<RoundTurn>[]>([
     }
   },
 
+  // ========================================
+  // Financial Columns with Formatting
+  // ========================================
   // P&L column with positive/negative formatting
   {
     accessorKey: 'pnl',

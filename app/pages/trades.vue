@@ -25,9 +25,9 @@ const period = ref<Period>('daily')
 </script>
 
 <template>
-  <UDashboardPanel id="analysis">
+  <UDashboardPanel id="trades">
     <template #header>
-      <UDashboardNavbar title="Analysis" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar title="Trades" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse/>
         </template>
