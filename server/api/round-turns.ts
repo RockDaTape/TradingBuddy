@@ -1,51 +1,43 @@
 // server/api/round-turns.ts
-import { defineEventHandler, getQuery, createError } from 'h3'
-import { parseISO } from 'date-fns'
-import { prisma } from '../../server/db/client'
+// API endpoint for fetching round turn records within a specified date range.
+// Handles query parameters and returns serialized round turn data.
+import {defineEventHandler, getQuery, createError} from 'h3'
+import {parseISO} from 'date-fns'
+import {prisma} from '../../server/db/client'
 
 export default defineEventHandler(async (event) => {
-  const { start, end } = getQuery(event)
+  // Extract and validate required date range parameters
+  const {start, end} = getQuery(event)
   if (!start || !end) {
-    throw createError({ statusCode: 400, statusMessage: 'start and end are required' })
+    throw createError({statusCode: 400, statusMessage: 'start and end are required'})
   }
 
   const startDate = parseISO(Array.isArray(start) ? start[0] : start)
-  const endDate   = parseISO(Array.isArray(end)   ? end[0]   : end)
+  const endDate = parseISO(Array.isArray(end) ? end[0] : end)
 
-  // Fetch raw RoundTurn records (with BigInt fields)
-  const rawRounds = await prisma.roundTurn.findMany({
+  // Fetch RoundTurn records with simple structure
+  const rounds = await prisma.roundTurn.findMany({
     where: {
-      openOrderTimestamp:  { gte: startDate },
-      closeOrderTimestamp: { lte: endDate   },
+      entryTime: {gte: startDate},
+      exitTime: {lte: endDate},
     },
-    orderBy: { openOrderTimestamp: 'desc' },
+    orderBy: {entryTime: 'desc'},
   })
 
-  // Serialize BigInt and Date fields for JSON
-  const rounds = rawRounds.map(r => ({
-    roundTurnId:            r.roundTurnId.toString(),
-    accountId:              r.accountId,
-    contractId:             r.contractId,
-    openOrderId:            r.openOrderId.toString(),
-    openOrderTimestamp:     r.openOrderTimestamp.toISOString(),
-    openTradeId:            r.openTradeId.toString(),
-    openPrice:              r.openPrice,
-    intraHighPrice:         r.intraHighPrice,
-    intraLowPrice:          r.intraLowPrice,
-    maxFavorableExcursion:  r.maxFavorableExcursion,
-    maxAdverseExcursion:    r.maxAdverseExcursion,
-    closeOrderId:           r.closeOrderId.toString(),
-    closeOrderTimestamp:    r.closeOrderTimestamp.toISOString(),
-    closeTradeId:           r.closeTradeId.toString(),
-    closePrice:             r.closePrice,
-    profitAndLoss:          r.profitAndLoss,
-    fees:                   r.fees,
-    side:                   r.side,
-    size:                   r.size,
-    durationSeconds:        r.durationSeconds,
-    voided:                 r.voided,
-    relatedOrderIds:        r.relatedOrderIds.map(id => id.toString()),
+  // Convert to JSON-safe format
+  const serializedRounds = rounds.map(r => ({
+    id: r.id,
+    symbol: r.symbol,
+    size: r.size,
+    entryTime: r.entryTime.toISOString(),
+    exitTime: r.exitTime.toISOString(),
+    entryPrice: r.entryPrice,
+    exitPrice: r.exitPrice,
+    pnl: r.pnl,
+    fees: r.fees,
+    direction: r.direction,
+    importedAt: r.importedAt.toISOString(),
   }))
 
-  return rounds
+  return serializedRounds
 })

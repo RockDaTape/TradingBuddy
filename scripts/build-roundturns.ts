@@ -1,165 +1,198 @@
-// scripts/build-roundturns.ts
+/**
+ * Script to build round turns from TopStep CSV trades
+ *
+ * This script:
+ * 1. Clears existing round turns from the database
+ * 2. Loads all TopStep trades ordered by contract and entry time
+ * 3. Groups trades by contract and direction (Long/Short)
+ * 4. Uses a Union-Find algorithm to identify overlapping trades within each group
+ * 5. Creates consolidated round turn records from overlapping trade groups
+ *
+ * Round turns represent the full cycle of entering and exiting a position,
+ * accounting for potential partial entries/exits over time.
+ */
 
-// ─── Heartbeat log ─────────────────────────────────────────────────────────────
-console.log("🔄 build-roundturns.ts starting…");
+console.log("🔄 build-roundturns.ts starting…")
 
-import { prisma } from '../server/db/client';
+import {prisma} from '../server/db/client'
+import type {TopStepCSV} from '@prisma/client'
 
 async function main() {
-  // ─── 1. Load all historical trades and orders ─────────────────────────────────
-  const trades = await prisma.trade.findMany();
-  const orders = await prisma.order.findMany();
+  // Clear existing round turns
+  await prisma.roundTurn.deleteMany({})
+  console.log("🗑️ Cleared existing round turns")
 
-  // Quick sanity checks:
-  console.log("Total trades:", trades.length);
-  console.log("Non-voided trades:", trades.filter(t => !t.voided).length);
-  console.log("Total orders:", orders.length);
-  console.log(
-    "Unique order statuses:",
-    Array.from(new Set(orders.map(o => o.status)))
-  );
+  // Load all TopStep CSV data
+  const topStepTrades = await prisma.topStepCSV.findMany({
+    orderBy: [
+      {contractName: 'asc'},
+      {enteredAt: 'asc'}
+    ]
+  })
 
-  // Build a lookup map from orderId → Order record
-  const orderById = new Map<string, typeof orders[0]>(
-    orders.map(o => [o.id.toString(), o])
-  );
+  console.log(`📊 Loaded ${topStepTrades.length} TopStep trades`)
 
-  // ─── 2. Pair trades into “round turns” tracking each exit leg’s P&L ─────────────
-  type Pair = {
-    open:    { trade: typeof trades[0]; order: typeof orders[0] };
-    close:   { trade: typeof trades[0]; order: typeof orders[0] };
-    pnlLegs: number[];
-  };
-  const pairs: Pair[] = [];
+  // Group by contract and direction
+  const tradeGroups = new Map<string, TopStepCSV[]>()
 
-  // Group and sort trades by contract symbol
-  const tradesByContract = trades
-    .filter(t => !t.voided)
-    .sort((a, b) => a.creationTimestamp.getTime() - b.creationTimestamp.getTime())
-    .reduce<Record<string, typeof trades>>((groups, t) => {
-      (groups[t.contractId] = groups[t.contractId] || []).push(t);
-      return groups;
-    }, {});
+  for (const trade of topStepTrades) {
+    const key = `${trade.contractName}-${trade.type}`
+    if (!tradeGroups.has(key)) {
+      tradeGroups.set(key, [])
+    }
+    tradeGroups.get(key)!.push(trade)
+  }
 
-  // Walk each contract’s series and detect flat state by counts
-  for (const [_contract, series] of Object.entries(tradesByContract)) {
-    let openSegment: Pair['open'] | null = null;
-    let lastExit:    Pair['close'] | null = null;
-    let openCount   = 0;
-    let closeCount  = 0;
-    let pnlLegs:    number[] = [];
+  console.log(`📦 Processing ${tradeGroups.size} contract-direction groups`)
 
-    for (const t of series) {
-      const o = orderById.get(t.orderId.toString());
-      if (!t || !o) continue;
+  let totalRoundTurns = 0
 
-      if (t.profitAndLoss == null) {
-        // entry or scale-in
-        openCount++;
-        if (openCount === 1) {
-          // first null after flat → open a new round-turn
-          openSegment = { trade: t, order: o };
-          // reset exit tracking
-          closeCount = 0;
-          lastExit   = null;
-          pnlLegs    = [];
-        }
-      } else {
-        // exit or scale-out
-        closeCount++;
-        lastExit = { trade: t, order: o };
-        pnlLegs.push(t.profitAndLoss);
-      }
+  // Process each group to find overlapping trades
+  for (const [groupKey, trades] of tradeGroups) {
+    console.log(`\n🔍 Processing ${groupKey} (${trades.length} trades)`)
 
-      // when flat (opens == closes), close the round-turn
-      if (openCount > 0 && openCount === closeCount && openSegment && lastExit) {
-        pairs.push({ open: openSegment, close: lastExit, pnlLegs });
-        // reset for next
-        openSegment = null;
-        lastExit    = null;
-        openCount   = 0;
-        closeCount  = 0;
-        pnlLegs     = [];
-      }
+    const roundTurnGroups = findOverlappingTrades(trades)
+    console.log(`  → Found ${roundTurnGroups.length} round turn groups`)
+
+    for (const group of roundTurnGroups) {
+      await createRoundTurnFromGroup(group)
+      totalRoundTurns++
     }
   }
 
-  console.log(`Built ${pairs.length} open/close pairs.`);
-
-  // ─── 3. Compute metrics & upsert RoundTurn records using pnlLegs sums ─────────
-  let successCount = 0;
-  let errorCount   = 0;
-
-  for (const { open, close, pnlLegs } of pairs) {
-    const openTs  = open.order.creationTimestamp;
-    const closeTs = close.order.updateTimestamp ?? close.trade.creationTimestamp;
-    const roundIdStr = `${open.trade.id}${close.trade.id}`;
-
-    // Sum P&L legs for the round-trip
-    const roundPnl = pnlLegs.reduce((sum, p) => sum + p, 0);
-
-    // All orders within the window as string[]
-    const relatedIdsStr = orders
-      .filter(o => o.creationTimestamp >= openTs && o.creationTimestamp <= closeTs)
-      .map(o => o.id.toString());
-
-    // Placeholder intraday high/low
-    const intraHigh = Math.max(open.trade.price, close.trade.price);
-    const intraLow  = Math.min(open.trade.price, close.trade.price);
-
-    try {
-      await prisma.roundTurn.upsert({
-        where: { roundTurnId: roundIdStr },
-        create: {
-          roundTurnId:           roundIdStr,
-          accountId:             open.trade.accountId,
-          contractId:            open.trade.contractId,
-
-          openOrderId:           open.order.id,
-          openOrderTimestamp:    open.order.creationTimestamp,
-          openTradeId:           open.trade.id,
-          openPrice:             open.trade.price,
-
-          intraHighPrice:        intraHigh,
-          intraLowPrice:         intraLow,
-          maxFavorableExcursion: intraHigh - open.trade.price,
-          maxAdverseExcursion:   open.trade.price - intraLow,
-
-          closeOrderId:          close.order.id,
-          closeOrderTimestamp:   closeTs,
-          closeTradeId:          close.trade.id,
-          closePrice:            close.trade.price,
-
-          profitAndLoss:         roundPnl,
-          fees:                  open.trade.fees + close.trade.fees,
-          side:                  open.trade.side,
-          size:                  open.trade.size,
-          durationSeconds:       Math.floor((closeTs.getTime() - openTs.getTime()) / 1000),
-          voided:                false,
-
-          relatedOrderIds:       relatedIdsStr,
-        },
-        update: { /* no-op */ },
-      });
-      successCount++;
-    } catch (e) {
-      console.error("Failed to upsert roundTurn", roundIdStr, e);
-      errorCount++;
-    }
-  }
-
-  console.log(`✅ Successfully wrote ${successCount} round-turns.`);
-  if (errorCount) console.warn(`⚠️ ${errorCount} failed.`);
-  await prisma.$disconnect();
+  console.log(`\n✅ Created ${totalRoundTurns} round turns`)
+  await prisma.$disconnect()
 }
 
-console.log("👉 Scheduling main()");
+// Union-Find data structure for connected components
+class UnionFind {
+  private parent: number[]
+  private rank: number[]
+
+  constructor(size: number) {
+    this.parent = Array.from({length: size}, (_, i) => i)
+    this.rank = new Array(size).fill(0)
+  }
+
+  find(x: number): number {
+    if (this.parent[x] !== x) {
+      this.parent[x] = this.find(this.parent[x]) // Path compression
+    }
+    return this.parent[x]
+  }
+
+  union(x: number, y: number): void {
+    const rootX = this.find(x)
+    const rootY = this.find(y)
+
+    if (rootX !== rootY) {
+      // Union by rank
+      if (this.rank[rootX] < this.rank[rootY]) {
+        this.parent[rootX] = rootY
+      } else if (this.rank[rootX] > this.rank[rootY]) {
+        this.parent[rootY] = rootX
+      } else {
+        this.parent[rootY] = rootX
+        this.rank[rootX]++
+      }
+    }
+  }
+
+  getGroups(): number[][] {
+    const groups = new Map<number, number[]>()
+    for (let i = 0; i < this.parent.length; i++) {
+      const root = this.find(i)
+      if (!groups.has(root)) {
+        groups.set(root, [])
+      }
+      groups.get(root)!.push(i)
+    }
+    return Array.from(groups.values())
+  }
+}
+
+function findOverlappingTrades(trades: TopStepCSV[]): TopStepCSV[][] {
+  if (trades.length === 0) return []
+  if (trades.length === 1) return [trades]
+
+  const n = trades.length
+  const uf = new UnionFind(n)
+
+  // Check all pairs for overlaps
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (tradesOverlap(trades[i], trades[j])) {
+        uf.union(i, j)
+        console.log(`    📎 Overlap: Trade ${i} (${trades[i].enteredAt.toISOString()}-${trades[i].exitedAt.toISOString()}) with Trade ${j} (${trades[j].enteredAt.toISOString()}-${trades[j].exitedAt.toISOString()})`)
+      }
+    }
+  }
+
+  // Convert index groups back to trade groups
+  const indexGroups = uf.getGroups()
+  return indexGroups.map(indices => indices.map(i => trades[i]))
+}
+
+function tradesOverlap(trade1: TopStepCSV, trade2: TopStepCSV): boolean {
+  // Two trades overlap if one's entry time is before the other's exit time
+  // and vice versa (they have any time intersection)
+  return (
+    (trade1.enteredAt < trade2.exitedAt && trade2.enteredAt < trade1.exitedAt)
+  )
+}
+
+async function createRoundTurnFromGroup(trades: TopStepCSV[]): Promise<void> {
+  if (trades.length === 0) return
+
+  // Sort trades by entry time for consistent processing
+  trades.sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime())
+
+  // Calculate consolidated metrics
+  const totalSize = trades.reduce((sum, t) => sum + t.size, 0)
+  const totalPnL = trades.reduce((sum, t) => sum + t.profitAndLoss, 0)
+  const totalFees = trades.reduce((sum, t) => sum + t.fees, 0)
+
+  // Weighted average prices
+  const weightedEntryPrice = trades.reduce((sum, t) => sum + (t.entryPrice * t.size), 0) / totalSize
+  const weightedExitPrice = trades.reduce((sum, t) => sum + (t.exitPrice * t.size), 0) / totalSize
+
+  // Time boundaries
+  const entryTime = new Date(Math.min(...trades.map(t => t.enteredAt.getTime())))
+  const exitTime = new Date(Math.max(...trades.map(t => t.exitedAt.getTime())))
+
+  // Concatenated ID
+  const consolidatedId = trades.map(t => t.id).join('-')
+
+  // Common contract and direction
+  const symbol = trades[0].contractName
+  const direction = trades[0].type === 'Long' ? 'Long' : 'Short'
+
+  console.log(`    ✨ Creating round turn: ${consolidatedId} | ${symbol} | ${direction} | Size: ${totalSize} | P&L: $${totalPnL.toFixed(2)}`)
+
+  try {
+    await prisma.roundTurn.create({
+      data: {
+        id: consolidatedId,
+        symbol: symbol,
+        size: totalSize,
+        entryTime: entryTime,
+        exitTime: exitTime,
+        entryPrice: weightedEntryPrice,
+        exitPrice: weightedExitPrice,
+        pnl: totalPnL,
+        fees: totalFees,
+        direction: direction,
+      }
+    })
+  } catch (error) {
+    console.error(`❌ Failed to create round turn ${consolidatedId}:`, error)
+    throw error
+  }
+}
+
 main()
-  .then(() => {
-    console.log("✅ main() completed");
-    return prisma.$disconnect();
-  })
+  .then(() => console.log("✅ Build completed"))
   .catch((e) => {
-    console.error("❌ Error in main():", e);
-    prisma.$disconnect().finally(() => process.exit(1));
-  });
+    console.error("❌ Error:", e)
+    process.exit(1)
+  })
